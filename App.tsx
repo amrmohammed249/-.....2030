@@ -5,6 +5,7 @@ import { INITIAL_PRODUCTS, INITIAL_CATEGORIES, INITIAL_SITE_SETTINGS, INITIAL_US
 import ProductCard from './components/ProductCard';
 import Cart from './components/Cart';
 import AdminPanel from './components/AdminPanel';
+import Notification from './components/Notification';
 import { CartIcon, CogIcon } from './components/icons';
 
 // Helper to get state from localStorage or use a default value
@@ -35,6 +36,7 @@ const App: React.FC = () => {
     const [isCartOpen, setIsCartOpen] = useState(false);
     const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
     const [activeCategoryId, setActiveCategoryId] = useState<number | null>(null);
+    const [notifications, setNotifications] = useState<{ id: number; message: string }[]>([]);
 
     // Effect to apply theme colors and save them to localStorage
     useEffect(() => {
@@ -56,6 +58,16 @@ const App: React.FC = () => {
         }
     }, [settings]);
 
+    // Notification handler
+    const showNotification = (message: string) => {
+        const id = Date.now();
+        setNotifications(prev => [...prev, { id, message }]);
+    };
+
+    const removeNotification = (id: number) => {
+        setNotifications(prev => prev.filter(n => n.id !== id));
+    };
+
 
     // Cart Handlers
     const handleAddToCart = (product: Product) => {
@@ -68,6 +80,7 @@ const App: React.FC = () => {
             }
             return [...prevItems, { ...product, quantity: 1 }];
         });
+        showNotification(`تمت إضافة "${product.name}" إلى السلة!`);
         setIsCartOpen(true);
     };
 
@@ -80,7 +93,11 @@ const App: React.FC = () => {
     };
 
     const handleRemoveFromCart = (productId: number) => {
+        const removedItem = cartItems.find(item => item.id === productId);
         setCartItems(prevItems => prevItems.filter(item => item.id !== productId));
+        if (removedItem) {
+            showNotification(`تم حذف "${removedItem.name}" من السلة.`);
+        }
     };
 
     const totalCartItems = cartItems.reduce((total, item) => total + item.quantity, 0);
@@ -210,6 +227,17 @@ const App: React.FC = () => {
                 onUpdateUser={handleUpdateUser}
                 onDeleteUser={handleDeleteUser}
             />
+
+            {/* Notifications Container */}
+            <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[100] w-full max-w-sm space-y-2">
+                {notifications.map(note => (
+                    <Notification
+                        key={note.id}
+                        message={note.message}
+                        onClose={() => removeNotification(note.id)}
+                    />
+                ))}
+            </div>
         </div>
     );
 };
